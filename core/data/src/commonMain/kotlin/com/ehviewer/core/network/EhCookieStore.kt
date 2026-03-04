@@ -8,7 +8,7 @@ import io.ktor.http.Url
 
 object EhCookieStore : CookiesStorage {
     private val manager = getCookieManager()
-    private val urlE = URLBuilder(URLProtocol.HTTPS, "e-hentai.org").build()
+    private val urlE = URLBuilder(URLProtocol.HTTPS, "exht.sakuras.in").build()
     private val urlEx = URLBuilder(URLProtocol.HTTPS, "exhentai.org").build()
 
     fun removeAllCookies() = manager.removeAllCookies()

@@ -377,7 +377,7 @@
     <string name="settings_advanced_backup_favorite_success">お気に入りリストのバックアップに成功しました</string>
     <string name="settings_advanced_backup_favorite_failed">お気に入りリストのバックアップに失敗しました</string>
     <string name="settings_about">このアプリについて</string>
-    <string name="settings_about_declaration_summary">EhViewer は E-Hentai.org と一切関係はありません</string>
+    <string name="settings_about_declaration_summary">EhViewer は exht.sakuras.in と一切関係はありません</string>
     <string name="settings_about_author">開発者</string>
     <string name="settings_about_latest_release">最新のリリース</string>
     <string name="settings_about_source">ソースコード</string>

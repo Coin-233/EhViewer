@@ -18,8 +18,8 @@ fun CronetConfig.configureClient(enableQuic: Boolean) {
 
         setEnableQuic(enableQuic)
         if (enableQuic) {
-            addQuicHint("e-hentai.org", 443, 443)
-            addQuicHint("forums.e-hentai.org", 443, 443)
+            addQuicHint("exht.sakuras.in", 443, 443)
+            addQuicHint("forums.exht.sakuras.in", 443, 443)
             addQuicHint("exhentai.org", 443, 443)
         }
     }

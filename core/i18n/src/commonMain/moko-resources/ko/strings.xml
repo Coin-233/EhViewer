@@ -306,7 +306,7 @@
     <string name="settings_advanced_import_data_successfully">데이터를 가져왔습니다.</string>
 
     <string name="settings_about">앱 정보</string>
-    <string name="settings_about_declaration_summary">EhViewer는 E-Hentai.org 사이트와 아무런 관계가 없습니다.</string>
+    <string name="settings_about_declaration_summary">EhViewer는 exht.sakuras.in 사이트와 아무런 관계가 없습니다.</string>
     <string name="settings_about_author">개발자</string>
     <string name="settings_about_source">소스 코드</string>
     <string name="settings_about_version">빌드 버전</string>

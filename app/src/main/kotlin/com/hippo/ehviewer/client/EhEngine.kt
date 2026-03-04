@@ -276,9 +276,9 @@ object EhEngine {
         .apply { galleryInfoList.fillInfo(url) }
 
     suspend fun signIn(username: String, password: String): String {
-        val referer = "https://forums.e-hentai.org/index.php?act=Login&CODE=00"
+        val referer = "https://forums.exht.sakuras.in/index.php?act=Login&CODE=00"
         val url = EhUrl.API_SIGN_IN
-        val origin = "https://forums.e-hentai.org"
+        val origin = "https://forums.exht.sakuras.in"
         return ehRequest(url, referer, origin) {
             formBody {
                 append("referer", referer)

@@ -4,7 +4,7 @@ use quick_xml::escape::unescape;
 use serde::Serialize;
 use tl::{Parser, VDom};
 
-const HOST_FORUMS: &str = "https://forums.e-hentai.org";
+const HOST_FORUMS: &str = "https://forums.exht.sakuras.in";
 
 #[derive(Serialize, Debug)]
 #[allow(non_snake_case)]

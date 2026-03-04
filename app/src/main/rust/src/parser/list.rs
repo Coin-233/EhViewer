@@ -84,7 +84,7 @@ pub fn get_thumb_key(url: &str) -> String {
 
 pub fn parse_token_and_gid(str: &str) -> Option<(i64, String)> {
     let grp =
-        regex!("https?://(?:exhentai.org|e-hentai.org(?:/lofi)?)/(?:g|mpv)/(\\d+)/([0-9a-f]{10})")
+        regex!("https?://(?:exhentai.org|exht.sakuras.in(?:/lofi)?)/(?:g|mpv)/(\\d+)/([0-9a-f]{10})")
             .captures(str)?;
     let token = &grp[2];
     let gid = grp[1].parse().ok()?;

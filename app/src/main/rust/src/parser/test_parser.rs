@@ -11,7 +11,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_parse_info() {
-        let resp = get("https://e-hentai.org/").await.expect("Failed to get!");
+        let resp = get("https://exht.sakuras.in/").await.expect("Failed to get!");
         let body = resp.text().await.expect("Failed to receive!");
         let dom = tl::parse(&body, ParserOptions::default()).expect("Failed to parse html");
         let result = parse_info_list(&dom, dom.parser()).expect("Failed to parse info list");
@@ -51,13 +51,13 @@ mod tests {
         assert_eq!(result.displayName, "Tenboro".to_string());
         assert_eq!(
             result.avatar,
-            Some("https://forums.e-hentai.org/ehgt/jdk_180.png".to_string())
+            Some("https://forums.exht.sakuras.in/ehgt/jdk_180.png".to_string())
         );
     }
 
     #[tokio::test]
     async fn test_parse_gallery_detail() {
-        let resp = get("https://e-hentai.org/g/530350/8b3c7e4a21/")
+        let resp = get("https://exht.sakuras.in/g/530350/8b3c7e4a21/")
             .await
             .expect("Failed to get!");
         let body = resp.text().await.expect("Failed to receive!");

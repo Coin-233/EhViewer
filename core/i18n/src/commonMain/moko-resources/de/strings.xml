@@ -295,7 +295,7 @@
     <string name="clipboard_gallery_url_snack_message">Ein Link von einen Galerie wurde in Zwischenablage erkennt.</string>
     <string name="clipboard_gallery_url_snack_action">Gehen</string>
     <string name="settings_advanced_read_cache_size">Größe des Lesezwischenspeichers</string>
-    <string name="settings_about_declaration_summary">EhViewer verbindet sich in keiner Weise mit E-Hentai.org.</string>
+    <string name="settings_about_declaration_summary">EhViewer verbindet sich in keiner Weise mit exht.sakuras.in.</string>
     <string name="settings_about_source">Quellcode</string>
     <string name="settings_about_version">Versionnummer</string>
     <string name="settings_about_check_for_updates">Auf Update überprüfen</string>
