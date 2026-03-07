@@ -33,7 +33,7 @@ object EhUrl {
     const val URL_UCONFIG_EX = HOST_EX + "uconfig.php"
     const val URL_MY_TAGS_EX = HOST_EX + "mytags"
     const val HOST_E = "https://$DOMAIN_E/"
-    const val API_E = "https://api.exht.sakuras.in/api.php"
+    const val API_E = "https://exht.sakuras.in/api.php"
     const val URL_UCONFIG_E = HOST_E + "uconfig.php"
     const val URL_MY_TAGS_E = HOST_E + "mytags"
     const val API_SIGN_IN = "https://forums.exht.sakuras.in/index.php?act=Login&CODE=01"
