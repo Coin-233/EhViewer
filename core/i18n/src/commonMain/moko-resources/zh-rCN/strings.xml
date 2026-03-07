@@ -374,7 +374,7 @@
     <string name="settings_advanced_backup_favorite_success">备份收藏列表成功</string>
     <string name="settings_advanced_backup_favorite_failed">备份收藏列表失败</string>
     <string name="settings_about">关于</string>
-    <string name="settings_about_declaration_summary">此应用仅供学习和交流使用, 请下载后24小时内删除/string>
+    <string name="settings_about_declaration_summary">此应用仅供学习和交流使用, 请下载后24小时内删除</string>
     <string name="settings_about_author">作者</string>
     <string name="settings_about_latest_release">最新版本</string>
     <string name="settings_about_source">源码</string>
