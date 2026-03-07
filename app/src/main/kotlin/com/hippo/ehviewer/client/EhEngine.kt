@@ -251,14 +251,29 @@ object EhEngine {
 
     suspend fun getGalleryPage(url: String, gid: Long, token: String): GalleryPageParser.Result {
         val referer = EhUrl.getGalleryDetailUrl(gid, token)
-        return ehRequest(url, referer).fetchUsingAsText(GalleryPageParser::parse)
+        return ehRequest(url, referer).fetchUsingAsText {
+            // 同样的清洗逻辑
+            val fixedHtml = this
+                .replace(Regex("""var apiuid\s*=\s*["']?hidden["']?;"""), "var apiuid = 12345;")
+                .replace(Regex("""var apikey\s*=\s*["']?hidden["']?;"""), "var apikey = \"dummy_key\";")
+            GalleryPageParser.parse(fixedHtml)
+        }
     }
 
     suspend fun getGalleryList(url: String) = ehRequest(url, EhUrl.referer).fetchUsingAsByteBuffer(GalleryListParser::parse)
         .apply { galleryInfoList.fillInfo(url, true) }
         .takeUnless { it.galleryInfoList.isEmpty() } ?: GalleryListParser.emptyResult
 
-    suspend fun getGalleryDetail(url: String) = ehRequest(url, EhUrl.referer).fetchUsingAsByteBuffer(GalleryDetailParser::parse).run {
+    suspend fun getGalleryDetail(url: String) = ehRequest(url, EhUrl.referer).fetchUsingAsText {
+        // 正则拦截并替换掉反代服务器的 "hidden" 脏数据，填入合法的假数据
+        val fixedHtml = this
+            .replace(Regex("""var apiuid\s*=\s*["']?hidden["']?;"""), "var apiuid = 12345;")
+            .replace(Regex("""var apikey\s*=\s*["']?hidden["']?;"""), "var apikey = \"dummy_key\";")
+
+        // 将修改后的 String 重新包装为 ByteBuffer，骗过底层的原生解析器
+        val buffer = ByteBuffer.wrap(fixedHtml.toByteArray(Charsets.UTF_8))
+        GalleryDetailParser.parse(buffer)
+    }.run {
         event?.let {
             Settings.lastDawnDays = today
             showEventNotification(it)
