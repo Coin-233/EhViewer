@@ -11,7 +11,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_parse_info() {
-        let resp = get("https://exht.sakuras.in/").await.expect("Failed to get!");
+        let resp = get("https://exht.sakuras.in/")
+            .await
+            .expect("Failed to get!");
         let body = resp.text().await.expect("Failed to receive!");
         let dom = tl::parse(&body, ParserOptions::default()).expect("Failed to parse html");
         let result = parse_info_list(&dom, dom.parser()).expect("Failed to parse info list");
