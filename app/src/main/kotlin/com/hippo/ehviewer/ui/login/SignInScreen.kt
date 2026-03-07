@@ -43,7 +43,8 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
 
     // 提取游客模式的点击逻辑
     val enterGuestMode = {
-        Settings.gallerySite.value = EhUrl.SITE_EX //强制EX
+        // 强制EX
+        Settings.gallerySite.value = EhUrl.SITE_EX
         Settings.needSignIn.value = false
     }
 
