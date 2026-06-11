@@ -122,6 +122,7 @@ class EhApplication : Application(), SingletonImageLoader.Factory {
         }
         launchIO {
             EhTagDatabase.launchUpdate()
+            @Suppress("UNUSED_EXPRESSION")
             launch { EhDB }
             launch { dataStateFlow.value }
             launch { OSUtils.totalMemory }
@@ -195,7 +196,7 @@ class EhApplication : Application(), SingletonImageLoader.Factory {
                 add(GifDecoder.Factory())
             }
         }
-        diskCache { imageCache }
+        diskCache { thumbCache }
         crossfade(300)
         val drawable = AppCompatResources.getDrawable(appCtx, R.drawable.image_failed)
         if (drawable != null) error(drawable.asImage(true))
@@ -237,10 +238,10 @@ class EhApplication : Application(), SingletonImageLoader.Factory {
             }
         }
 
-        val imageCache by lazy {
+        val thumbCache by lazy {
             diskCache {
-                directory(appCtx.cacheDir.toOkioPath() / "image_cache")
-                maxSizeBytes(Settings.readCacheSize.value.coerceIn(320, 5120).toLong() * 1024 * 1024)
+                directory(appCtx.cacheDir.toOkioPath() / "thumb")
+                maxSizeBytes(80L * 1024 * 1024)
             }
         }
 

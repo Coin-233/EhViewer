@@ -28,19 +28,15 @@ dependencyResolutionManagement {
 }
 
 plugins {
-    id("com.android.settings") version "9.1.0"
+    id("com.android.settings") version "9.2.1"
 }
 
 android {
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 37
     minSdk = 23
-    targetSdk = 36
+    targetSdk = 37
     ndkVersion = "29.0.14206865"
-    buildToolsVersion = "36.1.0"
+    buildToolsVersion = "37.0.0"
 }
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")

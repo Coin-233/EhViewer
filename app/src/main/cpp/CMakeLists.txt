@@ -32,7 +32,7 @@ option(XZ_TOOL_XZDEC OFF)
 FetchContent_Declare(
         liblzma
         GIT_REPOSITORY https://github.com/tukaani-project/xz.git
-        GIT_TAG v5.8.2
+        GIT_TAG v5.8.3
         GIT_SHALLOW 1
 )
 
@@ -99,12 +99,11 @@ option(ENABLE_TEST OFF)
 set(LIBARCHIVE_PATCH
         ${CMAKE_CURRENT_LIST_DIR}/0001-Fix-zip_time-performance.patch
         ${CMAKE_CURRENT_LIST_DIR}/0002-Use-UTF-8-as-default-charset-on-bionic.patch
-        ${CMAKE_CURRENT_LIST_DIR}/0003-Fix-incompatibility-with-Nettle-4.x.patch
 )
 FetchContent_Declare(
         libarchive
         GIT_REPOSITORY https://github.com/libarchive/libarchive.git
-        GIT_TAG v3.8.5
+        GIT_TAG v3.8.7
         GIT_SHALLOW 1
         PATCH_COMMAND git apply --check -R ${LIBARCHIVE_PATCH} || git apply ${LIBARCHIVE_PATCH}
 )
