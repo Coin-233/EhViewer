@@ -274,7 +274,9 @@ object EhEngine {
             .replace(Regex("""var apiuid\s*=\s*["']?hidden["']?;"""), "var apiuid = 0;")
             .replace(Regex("""var apikey\s*=\s*["']?hidden["']?;"""), "var apikey = \"deadbeef\";")
         val bytes = fixedHtml.toByteArray(Charsets.UTF_8)
-        val buffer = ByteBuffer.allocateDirect(bytes.size).put(bytes).flip()
+        val buffer = ByteBuffer.allocateDirect(bytes.size)
+        buffer.put(bytes)
+        buffer.flip()
         GalleryDetailParser.parse(buffer)
     }.run {
         event?.let {
