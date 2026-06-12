@@ -137,13 +137,13 @@ fn parse_detail_info(gd: &mut GalleryDetail, node: &NodeHandle, parser: &Parser)
 
 fn parse_detail(gd: &mut GalleryDetail, dom: &VDom, parser: &Parser, body: &str) -> Option<()> {
     let detail_regex = regex!(
-        r#"var gid = (\d+);\s*var token = "([a-f0-9]+)";\s*var apiuid = ([-\d]+);\s*var apikey = "([a-f0-9]+)";\s*var average_rating = ([.\d]+);"#
+        r#"var gid = (\d+);\s*var token = "([a-f0-9]+)";\s*var apiuid = (-?\d+|"hidden");\s*var apikey = "([0-9a-f]*|hidden)";\s*var average_rating = ([.\d]+);"#
     );
     let caps = detail_regex.captures(body)?;
     gd.galleryInfo.gid = caps[1].parse().ok()?;
     gd.galleryInfo.token = caps[2].to_string();
-    gd.apiUid = caps[3].parse().ok()?;
-    gd.apiKey = Some(caps[4].to_string());
+    gd.apiUid = caps[3].trim_matches('"').parse().unwrap_or(0);
+    gd.apiKey = Some(caps[4].to_string()).filter(|s| !s.is_empty() && s != "hidden");
     gd.galleryInfo.rating = caps[5].parse().ok()?;
 
     let regex = regex!(r#"[^(]+\(([^)]+)"#);
@@ -484,7 +484,7 @@ pub fn parse_preview_list(dom: &VDom, parser: &Parser) -> Result<Vec<GalleryPrev
         .iter()
         .filter_map(|n| n.get(parser)?.as_tag())
         .map(|a| {
-            let href_regex = regex!(r#"https[^s#"]+(?:s/([0-9a-f]{10})/\d+-|#page)(\d+)"#);
+            let href_regex = regex!(r#"https[^#"]+?(?:s/([0-9a-f]{10})/\d+-|#page)(\d+)"#);
             let caps = href_regex.captures(get_tag_attr(a, "href")?)?;
             let p_token = caps.get(1).map_or("", |m| m.as_str()).to_string();
             let position = caps[2].parse::<i32>().unwrap() - 1;

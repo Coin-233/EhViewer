@@ -270,13 +270,13 @@ object EhEngine {
         .takeUnless { it.galleryInfoList.isEmpty() } ?: GalleryListParser.emptyResult
 
     suspend fun getGalleryDetail(url: String) = ehRequest(url, EhUrl.referer).fetchUsingAsText {
-        // 正则拦截并替换掉反代服务器的 "hidden" 脏数据，填入合法的假数据
         val fixedHtml = this
-            .replace(Regex("""var apiuid\s*=\s*["']?hidden["']?;"""), "var apiuid = 12345;")
-            .replace(Regex("""var apikey\s*=\s*["']?hidden["']?;"""), "var apikey = \"dummy_key\";")
-
-        // 将修改后的 String 重新包装为 ByteBuffer，骗过底层的原生解析器
-        val buffer = ByteBuffer.wrap(fixedHtml.toByteArray(Charsets.UTF_8))
+            .replace(Regex("""var apiuid\s*=\s*["']?hidden["']?;"""), "var apiuid = 0;")
+            .replace(Regex("""var apikey\s*=\s*["']?hidden["']?;"""), "var apikey = \"deadbeef\";")
+        val bytes = fixedHtml.toByteArray(Charsets.UTF_8)
+        val buffer = ByteBuffer.allocateDirect(bytes.size)
+        buffer.put(bytes)
+        buffer.flip()
         GalleryDetailParser.parse(buffer)
     }.run {
         event?.let {
