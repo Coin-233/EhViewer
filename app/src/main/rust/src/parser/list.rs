@@ -94,7 +94,7 @@ pub fn parse_token_and_gid(str: &str) -> Option<(i64, String)> {
 
 fn parse_uploader_and_pages(str: &str) -> (Option<String>, bool, i32) {
     let uploader =
-        regex!(r#"<a href="https://e[x-]hentai.org/uploader/.*?">(.*?)</a>|(\(Disowned\))"#)
+        regex!(r#"<a href="https://(?:e[x-]hentai\.org|exht\.sakuras\.in)/uploader/.*?">(.*?)</a>|(\(Disowned\))"#)
             .captures(str)
             .map(|grp| {
                 let str = grp.get(1).or_else(|| grp.get(2)).unwrap().as_str();
