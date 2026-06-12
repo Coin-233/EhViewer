@@ -484,7 +484,7 @@ pub fn parse_preview_list(dom: &VDom, parser: &Parser) -> Result<Vec<GalleryPrev
         .iter()
         .filter_map(|n| n.get(parser)?.as_tag())
         .map(|a| {
-            let href_regex = regex!(r#"https[^s#"]+(?:s/([0-9a-f]{10})/\d+-|#page)(\d+)"#);
+            let href_regex = regex!(r#"https[^#"]+?(?:s/([0-9a-f]{10})/\d+-|#page)(\d+)"#);
             let caps = href_regex.captures(get_tag_attr(a, "href")?)?;
             let p_token = caps.get(1).map_or("", |m| m.as_str()).to_string();
             let position = caps[2].parse::<i32>().unwrap() - 1;
