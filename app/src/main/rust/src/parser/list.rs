@@ -44,16 +44,16 @@ pub struct GalleryListResult {
 
 pub fn to_category_i32(category: &str) -> i32 {
     match category {
-        "misc" => 0x1,
-        "doujinshi" => 0x2,
-        "manga" => 0x4,
-        "artistcg" | "artist cg sets" | "artist cg" => 0x8,
-        "gamecg" | "game cg sets" | "game cg" => 0x10,
-        "imageset" | "image sets" | "image set" => 0x20,
+        "misc" | "杂项" => 0x1,
+        "doujinshi" | "同人志" => 0x2,
+        "manga" | "漫画" => 0x4,
+        "artistcg" | "artist cg sets" | "artist cg" | "画师 cg" | "画师cg" => 0x8,
+        "gamecg" | "game cg sets" | "game cg" | "游戏 cg" | "游戏cg" => 0x10,
+        "imageset" | "image sets" | "image set" | "图集" => 0x20,
         "cosplay" => 0x40,
-        "asianporn" | "asian porn" => 0x80,
-        "non-h" => 0x100,
-        "western" => 0x200,
+        "asianporn" | "asian porn" | "亚洲色情" => 0x80,
+        "non-h" | "无 h" | "无h" => 0x100,
+        "western" | "欧美" => 0x200,
         "private" => 0x400,
         _ => 0x800,
     }
