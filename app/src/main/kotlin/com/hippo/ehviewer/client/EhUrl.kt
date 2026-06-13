@@ -46,6 +46,7 @@ object EhUrl {
     const val URL_FORUMS = "https://forums.exht.sakuras.in/"
     const val URL_FUNDS = HOST_E + "exchange.php?t=gp"
     const val URL_HOME = HOST_E + "home.php"
+    const val URL_PROXY_QUOTA = HOST_EX + "proxy-api/quota"
     const val URL_NEWS = HOST_E + "news.php"
     const val REFERER_EX = "https://$DOMAIN_EX"
     const val ORIGIN_EX = REFERER_EX

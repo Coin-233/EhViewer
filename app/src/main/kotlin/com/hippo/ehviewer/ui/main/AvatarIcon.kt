@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.NoAccounts
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material3.Button
@@ -50,7 +49,6 @@ import com.ehviewer.core.util.launch
 import com.ehviewer.core.util.launchIO
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.EhEngine
-import com.hippo.ehviewer.client.EhUtils
 import com.hippo.ehviewer.client.parser.HomeParser
 import com.hippo.ehviewer.collectAsState
 import com.hippo.ehviewer.ui.login.refreshAccountInfo
@@ -89,11 +87,9 @@ private val limitFlow: StateFlow<Result> = refreshEvent.conflate()
 @Composable
 context(_: CoroutineScope, _: DialogState, _: SnackbarHostState, _: DestinationsNavigator)
 fun AvatarIcon() {
-    val hasSignedIn by Settings.hasSignedIn.collectAsState()
-    if (hasSignedIn) {
-        val placeholder = stringResource(id = R.string.please_wait)
-        val result by limitFlow.collectAsState()
-        IconButton(
+    val placeholder = stringResource(id = R.string.please_wait)
+    val result by limitFlow.collectAsState()
+    IconButton(
             onClick = {
                 launch {
                     refreshEvent.emit(Unit)
@@ -200,21 +196,4 @@ fun AvatarIcon() {
                 }
             }
         }
-    } else {
-        IconButton(
-            onClick = {
-                launch {
-                    awaitConfirmationOrCancel(
-                        confirmText = R.string.sign_in,
-                        showCancelButton = false,
-                        text = { Text(text = stringResource(id = R.string.settings_eh_identity_cookies_guest)) },
-                    )
-                    EhUtils.signOut()
-                }
-            },
-            shapes = IconButtonDefaults.shapes(),
-        ) {
-            Icon(imageVector = Icons.Default.NoAccounts, contentDescription = null)
-        }
-    }
 }

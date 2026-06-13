@@ -20,7 +20,6 @@ import arrow.core.left
 import arrow.core.partially2
 import arrow.core.right
 import arrow.fx.coroutines.parMap
-import arrow.fx.coroutines.parZip
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.model.GalleryInfo
@@ -223,11 +222,7 @@ object EhEngine {
             .fetchUsingAsByteBuffer(ArchiveParser::parse.partially2(funds))
     }
 
-    suspend fun getImageLimits() = parZip(
-        { ehRequest(EhUrl.URL_HOME).fetchUsingAsByteBuffer(HomeParser::parse) },
-        { getFunds() },
-        { limits, funds -> HomeParser.Result(limits, funds) },
-    )
+    suspend fun getImageLimits() = ehRequest(EhUrl.URL_PROXY_QUOTA).fetchUsingAsText(HomeParser::parseProxyQuota)
 
     private suspend fun getFunds() = ehRequest(EhUrl.URL_FUNDS).fetchUsingAsText(HomeParser::parseFunds)
 
