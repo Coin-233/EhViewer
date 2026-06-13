@@ -12,12 +12,6 @@ jobs:
       - name: Free disk space
         run: rm -rf $AGENT_TOOLSDIRECTORY
 
-      - name: Enable KVM group perms
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -47,14 +41,8 @@ jobs:
           cache-encryption-key: ${{ secrets.GradleEncryptionKey }}
           cache-read-only: true
 
-      - name: Generate Baseline Profile
-        run: ./gradlew generateBaselineProfile
-          -Pandroid.testoptions.manageddevices.emulator.gpu="swiftshader_indirect"
-          -Prelease
-
       - name: Build
-        run: ./gradlew assembleRelease
-          -Prelease
+        run: ./gradlew assembleRelease -Prelease
 
       - name: Rename Apks
         run: |
