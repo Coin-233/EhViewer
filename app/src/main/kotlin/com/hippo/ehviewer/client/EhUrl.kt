@@ -107,6 +107,9 @@ object EhUrl {
             else -> URL_IMAGE_SEARCH_E
         }
 
+    val proxyQuotaUrl: String
+        get() = ehUrl(listOf("proxy-api", "quota")).buildString()
+
     fun getGalleryDetailUrl(gid: Long, token: String, index: Int = 0, allComment: Boolean = false) = ehUrl(listOf("g", "$gid", token)) {
         if (index != 0) addQueryParameter("p", "$index")
         if (allComment) addQueryParameter("hc", "1")

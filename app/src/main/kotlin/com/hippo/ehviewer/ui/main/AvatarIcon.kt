@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.NoAccounts
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material3.Button
@@ -50,7 +49,6 @@ import com.ehviewer.core.util.launch
 import com.ehviewer.core.util.launchIO
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.EhEngine
-import com.hippo.ehviewer.client.EhUtils
 import com.hippo.ehviewer.client.parser.HomeParser
 import com.hippo.ehviewer.collectAsState
 import com.hippo.ehviewer.ui.login.refreshAccountInfo
@@ -89,87 +87,84 @@ private val limitFlow: StateFlow<Result> = refreshEvent.conflate()
 @Composable
 context(_: CoroutineScope, _: DialogState, _: SnackbarHostState, _: DestinationsNavigator)
 fun AvatarIcon() {
-    val hasSignedIn by Settings.hasSignedIn.collectAsState()
-    if (hasSignedIn) {
-        val placeholder = stringResource(id = R.string.please_wait)
-        val result by limitFlow.collectAsState()
-        IconButton(
-            onClick = {
-                launch {
-                    refreshEvent.emit(Unit)
-                    awaitConfirmationOrCancel(
-                        title = R.string.image_limits,
-                        showConfirmButton = false,
-                        showCancelButton = false,
-                    ) {
-                        val animatedAlpha by animateFloatAsState(if (remember { result } == result) 0.5f else 1f)
-                        result.onNone {
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                CircularWavyProgressIndicator()
-                                Spacer(modifier = Modifier.size(dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)))
-                                Text(text = placeholder)
-                            }
+    val placeholder = stringResource(id = R.string.please_wait)
+    val result by limitFlow.collectAsState()
+    IconButton(
+        onClick = {
+            launch {
+                refreshEvent.emit(Unit)
+                awaitConfirmationOrCancel(
+                    title = R.string.image_limits,
+                    showConfirmButton = false,
+                    showCancelButton = false,
+                ) {
+                    val animatedAlpha by animateFloatAsState(if (remember { result } == result) 0.5f else 1f)
+                    result.onNone {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            CircularWavyProgressIndicator()
+                            Spacer(modifier = Modifier.size(dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)))
+                            Text(text = placeholder)
                         }
-                        result.onSome { current ->
-                            Box(modifier = Modifier.graphicsLayer { alpha = animatedAlpha }) {
-                                when (current) {
-                                    is Either.Left -> Text(text = current.value)
-                                    is Either.Right -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        val (limits, funds) = current.value
-                                        if (limits.maximum > 0) {
-                                            val value by animateFloatAsState(limits.current.toFloat() / limits.maximum)
-                                            LinearWavyProgressIndicator(
-                                                progress = { value },
-                                                modifier = Modifier.height(12.dp).fillMaxWidth(),
-                                            )
+                    }
+                    result.onSome { current ->
+                        Box(modifier = Modifier.graphicsLayer { alpha = animatedAlpha }) {
+                            when (current) {
+                                is Either.Left -> Text(text = current.value)
+                                is Either.Right -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    val (limits, funds) = current.value
+                                    if (limits.maximum > 0) {
+                                        val value by animateFloatAsState(limits.current.toFloat() / limits.maximum)
+                                        LinearWavyProgressIndicator(
+                                            progress = { value },
+                                            modifier = Modifier.height(12.dp).fillMaxWidth(),
+                                        )
+                                    }
+                                    when (limits.maximum) {
+                                        -1 -> Text(text = stringResource(id = R.string.image_limits_restricted))
+                                        0 -> Text(text = stringResource(id = R.string.image_limits_normal))
+                                        else -> Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(text = stringResource(id = R.string.image_limits_summary))
+                                            RollingNumber(number = limits.current)
+                                            Text(text = " / ")
+                                            RollingNumberPlaceholder(number = limits.maximum)
                                         }
-                                        when (limits.maximum) {
-                                            -1 -> Text(text = stringResource(id = R.string.image_limits_restricted))
-                                            0 -> Text(text = stringResource(id = R.string.image_limits_normal))
-                                            else -> Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text(text = stringResource(id = R.string.image_limits_summary))
-                                                RollingNumber(number = limits.current)
-                                                Text(text = " / ")
-                                                RollingNumberPlaceholder(number = limits.maximum)
-                                            }
-                                        }
-                                        Text(text = stringResource(id = R.string.current_funds))
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceAround,
-                                        ) {
-                                            FundsItem(
-                                                type = "GP",
-                                                amount = funds.gp,
-                                            )
-                                            FundsItem(
-                                                type = "C",
-                                                amount = funds.credit,
-                                            )
-                                        }
-                                        if (limits.resetCost > 0) {
-                                            Button(
-                                                onClick = {
-                                                    launchIO {
-                                                        runSwallowingWithUI {
-                                                            invalidateEvent.emit(Unit)
-                                                            EhEngine.resetImageLimits()
-                                                            refreshEvent.emit(Unit)
-                                                        }
+                                    }
+                                    Text(text = stringResource(id = R.string.current_funds))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceAround,
+                                    ) {
+                                        FundsItem(
+                                            type = "GP",
+                                            amount = funds.gp,
+                                        )
+                                        FundsItem(
+                                            type = "C",
+                                            amount = funds.credit,
+                                        )
+                                    }
+                                    if (limits.resetCost > 0) {
+                                        Button(
+                                            onClick = {
+                                                launchIO {
+                                                    runSwallowingWithUI {
+                                                        invalidateEvent.emit(Unit)
+                                                        EhEngine.resetImageLimits()
+                                                        refreshEvent.emit(Unit)
                                                     }
-                                                },
-                                                shapes = ButtonDefaults.shapes(),
-                                                modifier = Modifier.align(Alignment.CenterHorizontally),
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.RestartAlt,
-                                                    contentDescription = stringResource(id = R.string.reset),
-                                                )
-                                                Text(text = stringResource(id = R.string.reset_cost, limits.resetCost))
-                                            }
+                                                }
+                                            },
+                                            shapes = ButtonDefaults.shapes(),
+                                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.RestartAlt,
+                                                contentDescription = stringResource(id = R.string.reset),
+                                            )
+                                            Text(text = stringResource(id = R.string.reset_cost, limits.resetCost))
                                         }
                                     }
                                 }
@@ -177,44 +172,28 @@ fun AvatarIcon() {
                         }
                     }
                 }
-            },
-            shapes = IconButtonDefaults.shapes(),
-        ) {
-            val avatar by Settings.avatar.collectAsState()
-            AnimatedContent(targetState = avatar == null) { noAvatar ->
-                if (noAvatar) {
-                    Icon(imageVector = Icons.Default.Person, contentDescription = null)
-                } else {
-                    AsyncImage(
-                        model = avatar,
-                        contentDescription = null,
-                        onError = { (_, r) ->
-                            val e = r.throwable
-                            if (e is HttpException && e.response.code == 404) {
-                                launchIO { refreshAccountInfo() }
-                            }
-                        },
-                        modifier = Modifier.clip(CircleShape),
-                        contentScale = ContentScale.Crop,
-                    )
-                }
             }
-        }
-    } else {
-        IconButton(
-            onClick = {
-                launch {
-                    awaitConfirmationOrCancel(
-                        confirmText = R.string.sign_in,
-                        showCancelButton = false,
-                        text = { Text(text = stringResource(id = R.string.settings_eh_identity_cookies_guest)) },
-                    )
-                    EhUtils.signOut()
-                }
-            },
-            shapes = IconButtonDefaults.shapes(),
-        ) {
-            Icon(imageVector = Icons.Default.NoAccounts, contentDescription = null)
+        },
+        shapes = IconButtonDefaults.shapes(),
+    ) {
+        val avatar by Settings.avatar.collectAsState()
+        AnimatedContent(targetState = avatar == null) { noAvatar ->
+            if (noAvatar) {
+                Icon(imageVector = Icons.Default.Person, contentDescription = null)
+            } else {
+                AsyncImage(
+                    model = avatar,
+                    contentDescription = null,
+                    onError = { (_, r) ->
+                        val e = r.throwable
+                        if (e is HttpException && e.response.code == 404) {
+                            launchIO { refreshAccountInfo() }
+                        }
+                    },
+                    modifier = Modifier.clip(CircleShape),
+                    contentScale = ContentScale.Crop,
+                )
+            }
         }
     }
 }

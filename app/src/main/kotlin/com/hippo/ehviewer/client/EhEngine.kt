@@ -20,7 +20,6 @@ import arrow.core.left
 import arrow.core.partially2
 import arrow.core.right
 import arrow.fx.coroutines.parMap
-import arrow.fx.coroutines.parZip
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.model.GalleryInfo
@@ -54,6 +53,7 @@ import com.hippo.ehviewer.client.parser.GalleryMultiPageViewerPTokenParser
 import com.hippo.ehviewer.client.parser.GalleryPageParser
 import com.hippo.ehviewer.client.parser.GalleryTokenApiParser
 import com.hippo.ehviewer.client.parser.HomeParser
+import com.hippo.ehviewer.client.parser.Limits
 import com.hippo.ehviewer.client.parser.ProfileParser
 import com.hippo.ehviewer.client.parser.RateGalleryResult
 import com.hippo.ehviewer.client.parser.SignInParser
@@ -83,7 +83,9 @@ import kotlin.math.ceil
 import kotlin.system.measureTimeMillis
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.json.add
@@ -101,6 +103,21 @@ private const val MAX_SEQUENTIAL_REQUESTS = 5
 private const val REQUEST_INTERVAL = 5000L
 
 private val Url.isLogin get() = segments.firstOrNull() == "bounce_login.php"
+
+@Serializable
+private data class ProxyQuota(
+    val credits: String,
+    val kgp: String,
+    @SerialName("quota_limit")
+    val quotaLimit: String,
+    @SerialName("quota_used")
+    val quotaUsed: String,
+) {
+    val funds get() = Funds(kgp.toProxyQuotaInt(), credits.toProxyQuotaInt())
+    val limits get() = Limits(quotaUsed.toProxyQuotaInt(), quotaLimit.toProxyQuotaInt(), 0)
+}
+
+private fun String.toProxyQuotaInt() = replace(",", "").toIntOrNull() ?: 0
 
 private fun Either<String, ByteBuffer>.saveParseError(e: Throwable) {
     val dir = AppConfig.externalParseErrorDir ?: return
@@ -220,11 +237,7 @@ object EhEngine {
 
     suspend fun getArchiveList(gid: Long, token: String): ArchiveParser.Result {
         val url = EhUrl.getArchiveUrl(gid, token)
-        val funds = when {
-            EhUtils.isExHentai -> runSuspendCatching { getFunds() }.getOrNull() ?: Funds(0, 0)
-            !Settings.hasSignedIn.value -> Funds(0, 0)
-            else -> null
-        }
+        val funds = runSuspendCatching { getFunds() }.getOrNull() ?: Funds(0, 0)
         return ehRequest(url, EhUrl.getGalleryDetailUrl(gid, token))
             .fetchUsingAsByteBuffer(ArchiveParser::parse.partially2(funds))
     }
@@ -239,13 +252,12 @@ object EhEngine {
             ?: archives.first()
     }
 
-    suspend fun getImageLimits() = parZip(
-        { ehRequest(EhUrl.URL_HOME).fetchUsingAsByteBuffer(HomeParser::parse) },
-        { getFunds() },
-        { limits, funds -> HomeParser.Result(limits, funds) },
-    )
+    suspend fun getImageLimits() = getProxyQuota().run { HomeParser.Result(limits, funds) }
 
-    private suspend fun getFunds() = ehRequest(EhUrl.URL_FUNDS).fetchUsingAsText(HomeParser::parseFunds)
+    private suspend fun getFunds() = getProxyQuota().funds
+
+    private suspend fun getProxyQuota() = ehRequest(EhUrl.proxyQuotaUrl, EhUrl.referer)
+        .fetchUsingAsText { parseAs<ProxyQuota>() }
 
     suspend fun getNews(parse: Boolean) = ehRequest(EhUrl.URL_NEWS, EhUrl.REFERER_E)
         .fetchUsingAsByteBuffer { if (parse) EventPaneParser.parse(this) else null }
