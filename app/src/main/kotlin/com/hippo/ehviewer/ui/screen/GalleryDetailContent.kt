@@ -549,7 +549,6 @@ fun BelowHeader(galleryDetail: GalleryDetail, voteTag: VoteTag) {
                 }
             },
         )
-        val signInFirst = stringResource(R.string.sign_in_first)
         val noArchive = stringResource(R.string.no_archives)
         val downloadStarted = stringResource(R.string.download_archive_started)
         val downloadFailed = stringResource(R.string.download_archive_failure)
@@ -562,32 +561,28 @@ fun BelowHeader(galleryDetail: GalleryDetail, voteTag: VoteTag) {
         }
         fun showArchiveDialog() {
             launchIO {
-                if (galleryDetail.apiUid < 0) {
-                    snackbar(signInFirst)
-                } else {
-                    runSuspendCatching {
-                        val (archiveList, funds) = bgWork { archiveResult.await() }
-                        if (archiveList.isEmpty()) {
-                            snackbar(noArchive)
-                        } else {
-                            val selected = showNoButton {
-                                ArchiveList(
-                                    funds = funds,
-                                    items = archiveList,
-                                    onItemClick = { resume(it) },
-                                )
-                            }
-                            EhUtils.downloadArchive(galleryDetail, selected)
-                            snackbar(downloadStarted)
+                runSuspendCatching {
+                    val (archiveList, funds) = bgWork { archiveResult.await() }
+                    if (archiveList.isEmpty()) {
+                        snackbar(noArchive)
+                    } else {
+                        val selected = showNoButton {
+                            ArchiveList(
+                                funds = funds,
+                                items = archiveList,
+                                onItemClick = { resume(it) },
+                            )
                         }
-                    }.onFailure {
-                        when (it) {
-                            is NoHathClientException -> snackbar(it.message!!)
-                            is EhException -> snackbar(it.displayString())
-                            else -> {
-                                logcat(it)
-                                snackbar(downloadFailed)
-                            }
+                        EhUtils.downloadArchive(galleryDetail, selected)
+                        snackbar(downloadStarted)
+                    }
+                }.onFailure {
+                    when (it) {
+                        is NoHathClientException -> snackbar(it.message!!)
+                        is EhException -> snackbar(it.displayString())
+                        else -> {
+                            logcat(it)
+                            snackbar(downloadFailed)
                         }
                     }
                 }

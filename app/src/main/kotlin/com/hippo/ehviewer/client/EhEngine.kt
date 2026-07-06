@@ -42,9 +42,11 @@ import com.hippo.ehviewer.client.exception.NoHitsFoundException
 import com.hippo.ehviewer.client.exception.NotLoggedInException
 import com.hippo.ehviewer.client.exception.ParseException
 import com.hippo.ehviewer.client.parser.ArchiveParser
+import com.hippo.ehviewer.client.parser.Archive
 import com.hippo.ehviewer.client.parser.EventPaneParser
 import com.hippo.ehviewer.client.parser.FavParserResult
 import com.hippo.ehviewer.client.parser.FavoritesParser
+import com.hippo.ehviewer.client.parser.Funds
 import com.hippo.ehviewer.client.parser.GalleryApiParser
 import com.hippo.ehviewer.client.parser.GalleryDetailParser
 import com.hippo.ehviewer.client.parser.GalleryListParser
@@ -218,9 +220,23 @@ object EhEngine {
 
     suspend fun getArchiveList(gid: Long, token: String): ArchiveParser.Result {
         val url = EhUrl.getArchiveUrl(gid, token)
-        val funds = if (EhUtils.isExHentai) getFunds() else null
+        val funds = when {
+            EhUtils.isExHentai -> runSuspendCatching { getFunds() }.getOrNull() ?: Funds(0, 0)
+            !Settings.hasSignedIn.value -> Funds(0, 0)
+            else -> null
+        }
         return ehRequest(url, EhUrl.getGalleryDetailUrl(gid, token))
             .fetchUsingAsByteBuffer(ArchiveParser::parse.partially2(funds))
+    }
+
+    suspend fun getDefaultDownloadArchive(gid: Long, token: String): Archive {
+        val archives = getArchiveList(gid, token).archiveList.filterNot { it.isHath }
+        if (archives.isEmpty()) throw EhException(R.string.no_archives)
+        val preferred = if (Settings.downloadOriginImage.value) "org" else "res"
+        return archives.firstOrNull { it.res == preferred }
+            ?: archives.firstOrNull { it.res == "res" }
+            ?: archives.firstOrNull { it.res == "org" }
+            ?: archives.first()
     }
 
     suspend fun getImageLimits() = parZip(

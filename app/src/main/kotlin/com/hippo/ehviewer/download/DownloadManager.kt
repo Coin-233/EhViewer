@@ -35,6 +35,8 @@ import com.ehviewer.core.database.model.DownloadInfo
 import com.ehviewer.core.database.model.DownloadLabel
 import com.ehviewer.core.files.delete
 import com.ehviewer.core.files.find
+import com.ehviewer.core.files.mkdirs
+import com.ehviewer.core.files.moveTo
 import com.ehviewer.core.files.toOkioPath
 import com.ehviewer.core.files.toUri
 import com.ehviewer.core.model.BaseGalleryInfo
@@ -44,19 +46,29 @@ import com.ehviewer.core.util.logcat
 import com.ehviewer.core.util.mapNotNull
 import com.hippo.ehviewer.EhDB
 import com.hippo.ehviewer.Settings
+import com.hippo.ehviewer.client.EhEngine
+import com.hippo.ehviewer.client.EhUrl
+import com.hippo.ehviewer.client.ehRequest
 import com.hippo.ehviewer.client.exception.FatalException
 import com.hippo.ehviewer.spider.COMIC_INFO_FILE
 import com.hippo.ehviewer.spider.SpeedTracker
+import com.hippo.ehviewer.spider.SpiderDen
 import com.hippo.ehviewer.spider.SpiderQueen
 import com.hippo.ehviewer.spider.SpiderQueen.Companion.SPIDER_INFO_FILENAME
 import com.hippo.ehviewer.spider.SpiderQueen.OnSpiderListener
 import com.hippo.ehviewer.spider.downloadDirname
+import com.hippo.ehviewer.spider.getGalleryDownloadDir
 import com.hippo.ehviewer.spider.readComicInfo
 import com.hippo.ehviewer.spider.readCompatFromPath
+import com.hippo.ehviewer.spider.timeoutBySpeed
 import com.hippo.ehviewer.spider.toSimpleTags
 import com.hippo.ehviewer.util.AppConfig
+import com.hippo.ehviewer.util.copyTo
 import com.hippo.ehviewer.util.insertWith
 import com.hippo.ehviewer.util.runAssertingNotMainThread
+import io.ktor.client.statement.bodyAsChannel
+import kotlin.math.roundToInt
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -94,6 +106,8 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
     private var mDownloadListener: DownloadListener? = null
     private var mCurrentTask: DownloadInfo? = null
     private var mCurrentSpider: SpiderQueen? = null
+    private var mCurrentArchiveJob: Job? = null
+    private var mCurrentArchiveTempFile: Path? = null
 
     private val mutableNotifyFlow = MutableSharedFlow<DownloadInfo>(extraBufferCapacity = 1)
     val notifyFlow = mutableNotifyFlow.asSharedFlow()
@@ -158,19 +172,112 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
                     downloaded = 0
                     legacy = -1
                 }
-                val spider = SpiderQueen.obtainSpiderQueen(info, SpiderQueen.MODE_DOWNLOAD)
-                mCurrentSpider = spider
-                spider.addOnSpiderListener(this)
                 // Update in DB
                 EhDB.putDownloadInfo(info)
-                // Start speed count
-                mSpeedReminder.start()
                 // Notify start downloading
                 mDownloadListener?.onStart(info)
                 // Notify state update
                 mutableNotifyFlow.emit(info)
+                mCurrentArchiveJob = launch { downloadOfficialArchive(info) }
             }
         }
+    }
+
+    private suspend fun downloadOfficialArchive(info: DownloadInfo) {
+        var tempFileForCleanup: Path? = null
+        try {
+            val archive = EhEngine.getDefaultDownloadArchive(info.gid, info.token)
+            val archiveUrl = EhEngine.downloadArchive(info.gid, info.token, archive.res, archive.isHath)
+                ?: throw IllegalStateException("Archive unavailable")
+            val dir = (info.downloadDir ?: getGalleryDownloadDir(info)).apply { mkdirs() }
+            val tempFile = dir / "${info.gid}.zip.tmp"
+            val targetFile = dir / "${info.gid}.zip"
+            tempFileForCleanup = tempFile
+            mCurrentArchiveTempFile = tempFile
+            tempFile.delete()
+
+            val tracker = SpeedTracker()
+            var contentLength = -1L
+            var receivedSize = 0L
+            val speedJob = launch {
+                tracker.speedFlow().collect { speed ->
+                    info.speed = speed
+                    info.remaining = if (speed > 0L && contentLength > 0L) {
+                        (contentLength - receivedSize).coerceAtLeast(0L) / speed * 1000
+                    } else {
+                        -1
+                    }
+                    mDownloadListener?.onDownload(info)
+                    mutableNotifyFlow.emit(info)
+                }
+            }
+            try {
+                timeoutBySpeed(
+                    archiveUrl,
+                    { builder -> ehRequest(archiveUrl, EhUrl.getArchiveUrl(info.gid, info.token), builder = builder) },
+                    { total, done, bytesRead ->
+                        contentLength = total
+                        receivedSize = done
+                        if (bytesRead > 0) tracker.track(bytesRead)
+                        if (total > 0L) {
+                            info.total = 100
+                            info.finished = (done * 100f / total).roundToInt().coerceIn(0, 100)
+                            info.downloaded = info.finished
+                        } else {
+                            info.total = -1
+                            info.finished = -1
+                        }
+                        mDownloadListener?.onDownload(info)
+                        mutableNotifyFlow.emit(info)
+                    },
+                    { response -> response.bodyAsChannel().copyTo(tempFile) },
+                )
+            } finally {
+                speedJob.cancel()
+                tracker.reset()
+            }
+
+            targetFile.delete()
+            tempFile moveTo targetFile
+            mCurrentArchiveTempFile = null
+            if (Settings.archiveMetadata.value) {
+                runCatching {
+                    SpiderDen(info).apply {
+                        initDownloadDir()
+                        writeComicInfo()
+                    }
+                }.onFailure { logcat(it) }
+            }
+            onOfficialArchiveFinish(info, failed = false)
+        } catch (_: CancellationException) {
+            tempFileForCleanup?.delete()
+        } catch (e: Throwable) {
+            logcat(e)
+            tempFileForCleanup?.delete()
+            onOfficialArchiveFinish(info, failed = true)
+        }
+    }
+
+    private suspend fun onOfficialArchiveFinish(info: DownloadInfo, failed: Boolean) {
+        if (mCurrentTask?.gid != info.gid) return
+        mCurrentArchiveJob = null
+        mCurrentArchiveTempFile = null
+        mCurrentTask = null
+        info.remaining = -1
+        info.speed = -1
+        if (!failed) {
+            info.finished = info.pages
+            info.downloaded = info.pages
+            info.total = info.pages
+            info.legacy = 0
+        } else {
+            info.legacy = 0
+        }
+        info.state = if (failed) DownloadInfo.STATE_FAILED else DownloadInfo.STATE_FINISH
+        EhDB.putDownloadInfo(info)
+        mDownloadListener?.onFinish(info)
+        mutableNotifyFlow.emit(info)
+        ensureDownload()
     }
 
     suspend fun startDownload(galleryInfo: BaseGalleryInfo, label: String?) {
@@ -447,6 +554,10 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
     // Update mDownloadListener
     private suspend fun stopCurrentDownloadInternal(): DownloadInfo? {
         val info = mCurrentTask
+        mCurrentArchiveJob?.cancel()
+        mCurrentArchiveJob = null
+        mCurrentArchiveTempFile?.delete()
+        mCurrentArchiveTempFile = null
         val spider = mCurrentSpider
         // Release spider
         if (spider != null) {
