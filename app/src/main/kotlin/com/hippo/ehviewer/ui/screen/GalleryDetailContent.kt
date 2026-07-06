@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -99,7 +98,6 @@ import com.ehviewer.core.ui.util.rememberInVM
 import com.ehviewer.core.util.async
 import com.ehviewer.core.util.launch
 import com.ehviewer.core.util.launchIO
-import com.ehviewer.core.util.launchUI
 import com.ehviewer.core.util.logcat
 import com.ehviewer.core.util.withIOContext
 import com.ehviewer.core.util.withUIContext
@@ -134,7 +132,6 @@ import com.hippo.ehviewer.ui.main.TorrentList
 import com.hippo.ehviewer.ui.modifyFavorites
 import com.hippo.ehviewer.ui.navToReader
 import com.hippo.ehviewer.ui.openBrowser
-import com.hippo.ehviewer.ui.startDownload
 import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
 import com.hippo.ehviewer.ui.tools.awaitResult
@@ -247,10 +244,51 @@ fun GalleryDetailContent(
             snackbar(filterAdded)
         }
     }
+    val noArchive = stringResource(R.string.no_archives)
+    val downloadStarted = stringResource(R.string.download_archive_started)
+    val downloadFailed = stringResource(R.string.download_archive_failure)
+    val archiveResult = remember(galleryDetail) {
+        async(Dispatchers.IO + Job(), CoroutineStart.LAZY) {
+            galleryDetail?.let {
+                EhEngine.getArchiveList(it.gid, it.token)
+            }
+        }
+    }
+    fun showArchiveDialog() {
+        val detail = galleryDetail ?: return
+        launchIO {
+            runSuspendCatching {
+                val result = bgWork { archiveResult.await() } ?: return@runSuspendCatching
+                val (archiveList, funds) = result
+                if (archiveList.isEmpty()) {
+                    snackbar(noArchive)
+                } else {
+                    val selected = showNoButton {
+                        ArchiveList(
+                            funds = funds,
+                            items = archiveList,
+                            onItemClick = { resume(it) },
+                        )
+                    }
+                    EhUtils.downloadArchive(detail, selected)
+                    snackbar(downloadStarted)
+                }
+            }.onFailure {
+                when (it) {
+                    is NoHathClientException -> snackbar(it.message!!)
+                    is EhException -> snackbar(it.displayString())
+                    else -> {
+                        logcat(it)
+                        snackbar(downloadFailed)
+                    }
+                }
+            }
+        }
+    }
     fun onDownloadButtonClick() {
         galleryDetail ?: return
         if (DownloadManager.getDownloadState(galleryDetail.gid) == DownloadInfo.STATE_INVALID) {
-            launchUI { startDownload(false, galleryDetail.galleryInfo) }
+            showArchiveDialog()
         } else {
             launch { confirmRemoveDownload(galleryDetail) }
         }
@@ -548,50 +586,6 @@ fun BelowHeader(galleryDetail: GalleryDetail, voteTag: VoteTag) {
                     )
                 }
             },
-        )
-        val noArchive = stringResource(R.string.no_archives)
-        val downloadStarted = stringResource(R.string.download_archive_started)
-        val downloadFailed = stringResource(R.string.download_archive_failure)
-        val archiveResult = remember(galleryDetail) {
-            async(Dispatchers.IO + Job(), CoroutineStart.LAZY) {
-                with(galleryDetail) {
-                    EhEngine.getArchiveList(gid, token)
-                }
-            }
-        }
-        fun showArchiveDialog() {
-            launchIO {
-                runSuspendCatching {
-                    val (archiveList, funds) = bgWork { archiveResult.await() }
-                    if (archiveList.isEmpty()) {
-                        snackbar(noArchive)
-                    } else {
-                        val selected = showNoButton {
-                            ArchiveList(
-                                funds = funds,
-                                items = archiveList,
-                                onItemClick = { resume(it) },
-                            )
-                        }
-                        EhUtils.downloadArchive(galleryDetail, selected)
-                        snackbar(downloadStarted)
-                    }
-                }.onFailure {
-                    when (it) {
-                        is NoHathClientException -> snackbar(it.message!!)
-                        is EhException -> snackbar(it.displayString())
-                        else -> {
-                            logcat(it)
-                            snackbar(downloadFailed)
-                        }
-                    }
-                }
-            }
-        }
-        EhIconButton(
-            icon = Icons.Default.FolderZip,
-            text = stringResource(id = R.string.archive),
-            onClick = ::showArchiveDialog,
         )
         val torrentText = stringResource(R.string.torrent_count, galleryDetail.torrentCount)
         val noTorrents = stringResource(R.string.no_torrents)
