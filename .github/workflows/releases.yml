@@ -1,0 +1,80 @@
+name: Releases
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free disk space
+        run: rm -rf $AGENT_TOOLSDIRECTORY
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version-file: .java-version
+
+      - name: Install Rust Toolchain
+        run: rustup target add thumbv7neon-linux-androideabi
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./app/src/main/rust"
+
+      - name: CMake Cache
+        uses: actions/cache/restore@v5
+        with:
+          path: app/.cxx
+          key: cmake-
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-encryption-key: ${{ secrets.GradleEncryptionKey }}
+          cache-read-only: true
+
+      - name: Build
+        run: ./gradlew assembleRelease -Prelease
+
+      - name: Rename Apks
+        run: |
+          mv app/build/outputs/apk/default/release/app-default-universal-release.apk EhViewer-${{ github.ref_name }}-default-universal.apk
+          mv app/build/outputs/apk/default/release/app-default-arm64-v8a-release.apk EhViewer-${{ github.ref_name }}-default-arm64-v8a.apk
+          mv app/build/outputs/apk/default/release/app-default-x86_64-release.apk EhViewer-${{ github.ref_name }}-default-x86_64.apk
+          mv app/build/outputs/apk/default/release/app-default-armeabi-v7a-release.apk EhViewer-${{ github.ref_name }}-default-armeabi-v7a.apk
+          mv app/build/outputs/mapping/defaultRelease/mapping.txt EhViewer-${{ github.ref_name }}-default-mapping.txt
+          mv app/build/outputs/native-debug-symbols/defaultRelease/native-debug-symbols.zip EhViewer-${{ github.ref_name }}-default-native-debug-symbols.zip
+
+          mv app/build/outputs/apk/marshmallow/release/app-marshmallow-universal-release.apk EhViewer-${{ github.ref_name }}-marshmallow-universal.apk
+          mv app/build/outputs/apk/marshmallow/release/app-marshmallow-arm64-v8a-release.apk EhViewer-${{ github.ref_name }}-marshmallow-arm64-v8a.apk
+          mv app/build/outputs/apk/marshmallow/release/app-marshmallow-x86_64-release.apk EhViewer-${{ github.ref_name }}-marshmallow-x86_64.apk
+          mv app/build/outputs/apk/marshmallow/release/app-marshmallow-armeabi-v7a-release.apk EhViewer-${{ github.ref_name }}-marshmallow-armeabi-v7a.apk
+          mv app/build/outputs/mapping/marshmallowRelease/mapping.txt EhViewer-${{ github.ref_name }}-marshmallow-mapping.txt
+          mv app/build/outputs/native-debug-symbols/marshmallowRelease/native-debug-symbols.zip EhViewer-${{ github.ref_name }}-marshmallow-native-debug-symbols.zip
+
+      - name: Releases
+        uses: softprops/action-gh-release@v3
+        with:
+          body: Bump Version
+          files: |
+            EhViewer-${{ github.ref_name }}-default-universal.apk
+            EhViewer-${{ github.ref_name }}-default-arm64-v8a.apk
+            EhViewer-${{ github.ref_name }}-default-x86_64.apk
+            EhViewer-${{ github.ref_name }}-default-armeabi-v7a.apk
+            EhViewer-${{ github.ref_name }}-default-mapping.txt
+            EhViewer-${{ github.ref_name }}-default-native-debug-symbols.zip
+
+            EhViewer-${{ github.ref_name }}-marshmallow-universal.apk
+            EhViewer-${{ github.ref_name }}-marshmallow-arm64-v8a.apk
+            EhViewer-${{ github.ref_name }}-marshmallow-x86_64.apk
+            EhViewer-${{ github.ref_name }}-marshmallow-armeabi-v7a.apk
+            EhViewer-${{ github.ref_name }}-marshmallow-mapping.txt
+            EhViewer-${{ github.ref_name }}-marshmallow-native-debug-symbols.zip

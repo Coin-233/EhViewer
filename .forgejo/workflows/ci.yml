@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: nekomoee
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version-file: .java-version
+
+      - name: Setup Android SDK
+        uses: https://github.com/android-actions/setup-android@v4
+
+      - name: Setup Rust
+        uses: https://github.com/dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly-2026-10-07
+          targets: aarch64-linux-android, thumbv7neon-linux-androideabi
+
+      - name: Rust Cache
+        uses: https://github.com/Swatinem/rust-cache@v2
+        with:
+          workspaces: "./app/src/main/rust"
+          shared-key: ${{ runner.os }}
+
+      - name: Rustfmt Check
+        working-directory: ./app/src/main/rust
+        run: cargo fmt --all -- --check
+
+      - name: Clippy Check
+        working-directory: ./app/src/main/rust
+        run: cargo clippy --target aarch64-linux-android --all-features -- -D warnings
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: true
+
+      - name: Check build-logic
+        run: ./gradlew :build-logic:convention:check
+
+      - name: Spotless Check
+        run: ./gradlew spotlessCheck
+
+  default:
+    runs-on: nekomoee
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version-file: .java-version
+
+      - name: Setup Android SDK
+        uses: https://github.com/android-actions/setup-android@v4
+
+      - name: Setup Rust
+        uses: https://github.com/dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly-2026-10-07
+          targets: aarch64-linux-android, thumbv7neon-linux-androideabi
+
+      - name: Rust Cache
+        uses: https://github.com/Swatinem/rust-cache@v2
+        with:
+          workspaces: "./app/src/main/rust"
+          shared-key: ${{ runner.os }}
+          save-if: "false"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-encryption-key: ${{ secrets.GradleEncryptionKey }}
+
+      - name: CMake Cache
+        uses: actions/cache@v5
+        with:
+          path: app/.cxx
+          key: cmake-default-${{ hashFiles('rust-toolchain.toml', 'settings.gradle.kts', 'app/src/main/cpp/CMakeLists.txt', 'app/src/main/rust/Cargo.lock') }}
+          restore-keys: cmake-default-
+
+      - name: Build
+        run: ./gradlew assembleDefaultRelease
+
+      - name: Upload ARM64
+        uses: actions/upload-artifact@v3
+        with:
+          name: default-arm64-v8a-${{ github.sha }}
+          path: app/build/outputs/apk/default/release/app-default-arm64-v8a-release.apk
+
+      - name: Upload x86_64
+        uses: actions/upload-artifact@v3
+        with:
+          name: default-x86_64-${{ github.sha }}
+          path: app/build/outputs/apk/default/release/app-default-x86_64-release.apk
+
+      - name: Upload ARM32
+        uses: actions/upload-artifact@v3
+        with:
+          name: default-armeabi-v7a-${{ github.sha }}
+          path: app/build/outputs/apk/default/release/app-default-armeabi-v7a-release.apk
+
+      - name: Upload mapping
+        uses: actions/upload-artifact@v3
+        with:
+          name: default-mapping-${{ github.sha }}
+          path: app/build/outputs/mapping/defaultRelease/*.txt
+
+      - name: Upload native debug symbols
+        uses: actions/upload-artifact@v3
+        with:
+          name: default-native-debug-symbols-${{ github.sha }}
+          path: app/build/outputs/native-debug-symbols/defaultRelease/native-debug-symbols.zip
