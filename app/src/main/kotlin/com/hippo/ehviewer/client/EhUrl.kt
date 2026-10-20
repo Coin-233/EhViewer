@@ -47,6 +47,7 @@ object EhUrl {
     const val URL_FUNDS = HOST_E + "exchange.php?t=gp"
     const val URL_HOME = HOST_E + "home.php"
     const val URL_NEWS = HOST_E + "news.php"
+    const val URL_ANNOUNCEMENT = HOST_EX + "proxy-api/announcement"
     const val REFERER_EX = "https://$DOMAIN_EX"
     const val ORIGIN_EX = REFERER_EX
     const val REFERER_E = "https://$DOMAIN_E"

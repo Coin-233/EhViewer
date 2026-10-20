@@ -40,8 +40,8 @@ import com.hippo.ehviewer.client.exception.NoHathClientException
 import com.hippo.ehviewer.client.exception.NoHitsFoundException
 import com.hippo.ehviewer.client.exception.NotLoggedInException
 import com.hippo.ehviewer.client.exception.ParseException
-import com.hippo.ehviewer.client.parser.ArchiveParser
 import com.hippo.ehviewer.client.parser.Archive
+import com.hippo.ehviewer.client.parser.ArchiveParser
 import com.hippo.ehviewer.client.parser.EventPaneParser
 import com.hippo.ehviewer.client.parser.FavParserResult
 import com.hippo.ehviewer.client.parser.FavoritesParser
@@ -84,8 +84,8 @@ import kotlin.system.measureTimeMillis
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.serialization.SerialName
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.json.add
@@ -103,6 +103,9 @@ private const val MAX_SEQUENTIAL_REQUESTS = 5
 private const val REQUEST_INTERVAL = 5000L
 
 private val Url.isLogin get() = segments.firstOrNull() == "bounce_login.php"
+
+@Serializable
+internal data class Announcement(val content: String)
 
 @Serializable
 private data class ProxyQuota(
@@ -258,6 +261,9 @@ object EhEngine {
 
     private suspend fun getProxyQuota() = ehRequest(EhUrl.proxyQuotaUrl, EhUrl.referer)
         .fetchUsingAsText { parseAs<ProxyQuota>() }
+
+    suspend fun getAnnouncement() = ehRequest(EhUrl.URL_ANNOUNCEMENT, EhUrl.REFERER_EX)
+        .executeAndParseAs<Announcement>().content
 
     suspend fun getNews(parse: Boolean) = ehRequest(EhUrl.URL_NEWS, EhUrl.REFERER_E)
         .fetchUsingAsByteBuffer { if (parse) EventPaneParser.parse(this) else null }

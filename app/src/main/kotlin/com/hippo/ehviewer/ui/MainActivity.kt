@@ -104,7 +104,9 @@ import androidx.compose.ui.util.lerp
 import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.ehviewer.core.files.isDirectory
 import com.ehviewer.core.files.toOkioPath
@@ -122,6 +124,7 @@ import com.ehviewer.core.util.isAtLeastS
 import com.ehviewer.core.util.withIOContext
 import com.hippo.ehviewer.EhApplication.Companion.initialized
 import com.hippo.ehviewer.Settings
+import com.hippo.ehviewer.client.EhEngine
 import com.hippo.ehviewer.client.data.ListUrlBuilder
 import com.hippo.ehviewer.client.parser.GalleryDetailUrlParser
 import com.hippo.ehviewer.client.parser.GalleryPageUrlParser
@@ -161,7 +164,9 @@ import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
 import eu.kanade.tachiyomi.util.view.setSecureScreen
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -180,6 +185,10 @@ private val navItems = arrayOf<Triple<Direction, Int, ImageVector>>(
     Triple(DownloadsScreenDestination, R.string.downloads, Icons.Default.Download),
     Triple(SettingsScreenDestination, R.string.settings, Icons.Default.Settings),
 )
+
+private class StartupState : ViewModel() {
+    var announcementChecked = false
+}
 
 class MainActivity : AppCompatActivity() {
 
@@ -251,7 +260,26 @@ class MainActivity : AppCompatActivity() {
             val hasNetwork = remember { connectivityManager.activeNetwork != null }
             if (!AppConfig.isBenchmark) {
                 val noNetwork = stringResource(R.string.no_network)
+                val startupState = viewModel { StartupState() }
                 LaunchedEffect(Unit) {
+                    if (hasNetwork && !startupState.announcementChecked) {
+                        val content = runSuspendCatching { EhEngine.getAnnouncement() }.getOrNull()
+                        if (!content.isNullOrBlank()) {
+                            runCatching {
+                                awaitConfirmationOrCancel(
+                                    title = R.string.announcement,
+                                    showCancelButton = false,
+                                ) {
+                                    Text(
+                                        text = content,
+                                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                                    )
+                                }
+                            }
+                        }
+                        currentCoroutineContext().ensureActive()
+                        startupState.announcementChecked = true
+                    }
                     runCatching { checkDownloadLocation() }
                     runCatching { checkAppLinkVerify() }
                     if (hasNetwork) {
