@@ -24,12 +24,10 @@ import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
-private const val USAGE = HardwareBuffer.USAGE_CPU_WRITE_OFTEN or HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE
-
 private class Frame(val bitmap: Bitmap, val ahb: HardwareBuffer?, var timestamp: Int) : AutoCloseable {
     override fun close() {
         bitmap.recycle()
-        ahb?.close()
+        if (isAtLeastQ) ahb?.close()
     }
 
     fun decode(decoder: Long, reset: Boolean = false): Int {
@@ -44,7 +42,8 @@ private class Frame(val bitmap: Bitmap, val ahb: HardwareBuffer?, var timestamp:
 
 private fun allocFrame(w: Int, h: Int): Frame {
     return if (isAtLeastQ) {
-        val ahb = HardwareBuffer.create(w, h, HardwareBuffer.RGBA_8888, 1, USAGE)
+        val usage = HardwareBuffer.USAGE_CPU_WRITE_OFTEN or HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE
+        val ahb = HardwareBuffer.create(w, h, HardwareBuffer.RGBA_8888, 1, usage)
         val bitmap = Bitmap.wrapHardwareBuffer(ahb, ColorSpace.get(ColorSpace.Named.SRGB))
         if (bitmap == null) {
             ahb.close()

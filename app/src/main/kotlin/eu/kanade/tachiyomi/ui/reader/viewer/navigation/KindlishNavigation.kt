@@ -14,7 +14,7 @@ import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation
  * +---+---+---+
 */
 object KindlishNavigation : ViewerNavigation() {
-    override val originalRegions = [
+    override val originalRegions = listOf(
         Region(
             rect = Rect(0.33f, 0.33f, 1f, 1f),
             type = NavigationRegion.NEXT,
@@ -23,5 +23,5 @@ object KindlishNavigation : ViewerNavigation() {
             rect = Rect(0f, 0.33f, 0.33f, 1f),
             type = NavigationRegion.PREV,
         ),
-    ]
+    )
 }

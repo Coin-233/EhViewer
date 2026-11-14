@@ -53,7 +53,7 @@ import splitties.init.appCtx
 object EhTagDatabase : CoroutineScope {
     override val coroutineContext = Dispatchers.IO + Job()
     private const val NAMESPACE_PREFIX = "n"
-    private val PREFIXES = ["-", "~", "tag:", "weak:"]
+    private val PREFIXES = listOf("-", "~", "tag:", "weak:")
     private lateinit var tagGroups: Map<String, Map<String, String>>
     private val updateLock = Mutex()
     var initialized by mutableStateOf(false)

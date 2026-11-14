@@ -14,8 +14,6 @@ import com.ehviewer.core.util.logcat
 import com.hippo.ehviewer.image.copyBitmapToAHB
 import moe.tarsin.coroutines.runSuspendCatching
 
-private const val USAGE = HardwareBuffer.USAGE_CPU_WRITE_RARELY or HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE
-
 object CropBorderInterceptor : Interceptor {
     override suspend fun intercept(chain: Interceptor.Chain): ImageResult {
         val result = chain.proceed()
@@ -42,7 +40,8 @@ object CropBorderInterceptor : Interceptor {
                                 else -> error("Unsupported bitmap config: $config")
                             }
                             autoCloseScope {
-                                val buffer = install(HardwareBuffer.create(w, h, format, 1, USAGE))
+                                val usage = HardwareBuffer.USAGE_CPU_WRITE_RARELY or HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE
+                                val buffer = install(HardwareBuffer.create(w, h, format, 1, usage))
                                 copyBitmapToAHB(src, buffer, x, y)
                                 Bitmap.wrapHardwareBuffer(buffer, src.colorSpace)
                             }

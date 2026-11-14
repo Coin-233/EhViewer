@@ -48,7 +48,7 @@ data class SortMode(val field: Field, val order: Order, val groupByDownloadLabel
             return SortMode(field, order, groupByDownloadLabel)
         }
         val Default = SortMode(Field.TIME, Order.DESC)
-        val All = [
+        val All = listOf(
             Default,
             SortMode(Field.TIME, Order.ASC),
             SortMode(Field.GID, Order.DESC),
@@ -57,6 +57,6 @@ data class SortMode(val field: Field, val order: Order, val groupByDownloadLabel
             SortMode(Field.TITLE, Order.DESC),
             SortMode(Field.PAGES, Order.ASC),
             SortMode(Field.PAGES, Order.DESC),
-        ]
+        )
     }
 }

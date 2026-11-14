@@ -47,7 +47,7 @@ import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.awaitResult
 import kotlinx.coroutines.CoroutineScope
 
-private val categoryTable = [
+private val categoryTable = listOf(
     EhUtils.DOUJINSHI to R.string.doujinshi,
     EhUtils.MANGA to R.string.manga,
     EhUtils.ARTIST_CG to R.string.artist_cg,
@@ -58,7 +58,7 @@ private val categoryTable = [
     EhUtils.COSPLAY to R.string.cosplay,
     EhUtils.ASIAN_PORN to R.string.asian_porn,
     EhUtils.MISC to R.string.misc,
-]
+)
 
 @Composable
 context(_: DialogState, _: CoroutineScope, _: Context)
