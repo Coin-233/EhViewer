@@ -42,6 +42,15 @@ pub fn parse_archive_url(dom: &VDom, parser: &Parser, body: &str) -> Result<Opti
         let href = get_tag_attr(tag, "href")?;
         Some(format!("{href}?start=1"))
     });
+    if url.is_some() {
+        return Ok(url);
+    }
+    let links = dom.query_selector("a").context("Failed to parse archive download page")?;
+    let url = links.filter_map(|node| node.get(parser)?.as_tag()).find_map(|tag| {
+        let href = get_tag_attr(tag, "href")?;
+        let label = tag.inner_text(parser).split_whitespace().collect::<Vec<_>>().join(" ").to_ascii_lowercase();
+        if label.contains("click here to start download") { Some(href.replace("&amp;", "&")) } else { None }
+    });
     Ok(url)
 }
 

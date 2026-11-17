@@ -46,11 +46,14 @@ import com.ehviewer.core.model.GalleryInfo
 import com.ehviewer.core.preferences.edit
 import com.ehviewer.core.util.logcat
 import com.ehviewer.core.util.mapNotNull
+import com.hippo.ehviewer.EhApplication.Companion.ktorClient
 import com.hippo.ehviewer.EhDB
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.EhEngine
 import com.hippo.ehviewer.client.EhUrl
 import com.hippo.ehviewer.client.exception.FatalException
+import com.hippo.ehviewer.client.parser.ArchiveParser
+import com.hippo.ehviewer.client.resolveArchiveDownload
 import com.hippo.ehviewer.spider.COMIC_INFO_FILE
 import com.hippo.ehviewer.spider.SpeedTracker
 import com.hippo.ehviewer.spider.SpiderDen
@@ -216,8 +219,13 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
                     info.archiveResolution = it
                     EhDB.putDownloadInfo(info)
                 }
-                val url = EhEngine.downloadArchive(info.gid, info.token, resolution, false)
+                val archivePage = EhEngine.downloadArchive(info.gid, info.token, resolution, false)
                     ?: error("Archive unavailable")
+                val (url, referer) = ktorClient.resolveArchiveDownload(
+                    archivePage,
+                    EhUrl.getArchiveUrl(info.gid, info.token),
+                    ArchiveParser::parseArchiveUrl,
+                )
                 coroutineScope {
                     val tracker = SpeedTracker()
                     var contentLength = -1L
@@ -235,7 +243,7 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
                         }
                     }
                     try {
-                        downloadArchive(url, EhUrl.getArchiveUrl(info.gid, info.token), workspace, Settings.archiveDownloadThreads.value) { total, done, bytesRead ->
+                        downloadArchive(url, referer, workspace, Settings.archiveDownloadThreads.value) { total, done, bytesRead ->
                             contentLength = total
                             receivedSize = done
                             if (bytesRead > 0) tracker.track(bytesRead)
