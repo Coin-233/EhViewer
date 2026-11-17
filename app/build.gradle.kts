@@ -56,11 +56,11 @@ android {
 
     defaultConfig {
         applicationId = "moe.tarsin.ehviewer.mod"
-        versionCode = 180064
+        versionCode = 180065
         versionName = if (snapshot) {
-            "2.1.0-SNAPSHOT"
+            "2.1.1-SNAPSHOT"
         } else {
-            "2.0.2"
+            "2.0.3"
         }
         buildConfigField("boolean", "SNAPSHOT", "$snapshot")
         buildConfigField("String", "RAW_VERSION_NAME", "\"$versionName\"")
