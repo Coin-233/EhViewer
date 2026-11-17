@@ -62,6 +62,7 @@ import com.hippo.ehviewer.download.downloadDir
 import com.hippo.ehviewer.download.downloadLocation
 import com.hippo.ehviewer.download.tempDownloadDir
 import com.hippo.ehviewer.ui.destinations.ReaderScreenDestination
+import com.hippo.ehviewer.ui.main.ArchiveList
 import com.hippo.ehviewer.ui.reader.ReaderScreenArgs
 import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
@@ -71,11 +72,13 @@ import com.hippo.ehviewer.ui.tools.awaitSelectItem
 import com.hippo.ehviewer.ui.tools.awaitSelectItemWithCheckBox
 import com.hippo.ehviewer.ui.tools.awaitSelectItemWithIcon
 import com.hippo.ehviewer.ui.tools.awaitSelectItemWithIconAndTextField
+import com.hippo.ehviewer.ui.tools.showNoButton
 import com.hippo.ehviewer.util.FavouriteStatusRouter
 import com.hippo.ehviewer.util.bgWork
 import com.hippo.ehviewer.util.requestPermission
 import com.hippo.ehviewer.util.restartApplication
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlin.coroutines.resume
 import kotlin.time.Clock
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -127,6 +130,20 @@ suspend fun startDownload(forceDefault: Boolean, vararg galleryInfos: BaseGaller
     if (toAdd.isEmpty()) {
         return tip(R.string.added_to_download_list)
     }
+    val resolutions = toAdd.associate { info ->
+        val result = bgWork { EhEngine.getArchiveList(info.gid, info.token) }
+        val archives = result.archiveList.filterNot { it.isHath }
+        if (archives.isEmpty()) throw EhException(R.string.no_archives)
+        val selected = showNoButton {
+            ArchiveList(
+                title = EhUtils.getSuitableTitle(info),
+                funds = result.funds,
+                items = archives,
+                onItemClick = { resume(it) },
+            )
+        }
+        info.gid to selected.res
+    }
     var justStart = forceDefault
     var label: String? = null
     // Get default download label
@@ -142,7 +159,7 @@ suspend fun startDownload(forceDefault: Boolean, vararg galleryInfos: BaseGaller
     if (justStart) {
         // Got default label
         for (gi in toAdd) {
-            DownloadService.startDownload(gi, label)
+            DownloadService.startDownload(gi, label, resolutions.getValue(gi.gid))
         }
         // Notify
         tip(R.string.added_to_download_list)
@@ -163,7 +180,7 @@ suspend fun startDownload(forceDefault: Boolean, vararg galleryInfos: BaseGaller
         val label1 = if (selected == 0) null else items[selected].takeIf { DownloadManager.containLabel(it) }
         // Start download
         for (gi in toAdd) {
-            DownloadService.startDownload(gi, label1)
+            DownloadService.startDownload(gi, label1, resolutions.getValue(gi.gid))
         }
         // Save settings
         if (checked) {

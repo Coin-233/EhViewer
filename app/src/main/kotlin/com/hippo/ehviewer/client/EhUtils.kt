@@ -15,11 +15,6 @@
  */
 package com.hippo.ehviewer.client
 
-import android.app.DownloadManager
-import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.Intent
-import android.os.Environment
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -28,23 +23,14 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.core.net.toUri
 import arrow.core.memoize
-import com.ehviewer.core.model.GalleryDetail
 import com.ehviewer.core.model.GalleryInfo
 import com.ehviewer.core.network.EhCookieStore
-import com.ehviewer.core.util.withUIContext
 import com.hippo.ehviewer.Settings
-import com.hippo.ehviewer.client.parser.Archive
-import com.hippo.ehviewer.spider.SpiderDen
-import com.hippo.ehviewer.util.AppConfig
-import com.hippo.ehviewer.util.FileUtils
-import com.hippo.ehviewer.util.addTextToClipboard
 import com.materialkolor.hct.Hct
 import com.materialkolor.ktx.from
 import com.materialkolor.ktx.toColor
 import com.materialkolor.utils.ColorUtils.lstarFromArgb
-import splitties.systemservices.downloadManager
 
 object EhUtils {
     const val NONE = -1 // Use it for homepage
@@ -188,36 +174,5 @@ object EhUtils {
         // Only need romaji.
         // TODO But not sure every '|' means that
         return title.substringBeforeLast('|').trim().ifEmpty { null }
-    }
-
-    context(ctx: Context)
-    suspend fun downloadArchive(galleryDetail: GalleryDetail, archive: Archive) {
-        val gid = galleryDetail.gid
-        EhEngine.downloadArchive(gid, galleryDetail.token, archive.res, archive.isHath)?.let {
-            val uri = it.toUri()
-            val intent = Intent().apply {
-                action = Intent.ACTION_VIEW
-                setDataAndType(uri, "application/zip")
-            }
-            val name = "$gid-${getSuitableTitle(galleryDetail)}.zip"
-            try {
-                ctx.startActivity(intent)
-                withUIContext { addTextToClipboard(name, true) }
-            } catch (_: ActivityNotFoundException) {
-                val r = DownloadManager.Request(uri)
-                r.setDestinationInExternalPublicDir(
-                    Environment.DIRECTORY_DOWNLOADS,
-                    AppConfig.APP_DIRNAME + "/" + FileUtils.sanitizeFilename(name),
-                )
-                r.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                downloadManager.enqueue(r)
-            }
-            if (Settings.archiveMetadata.value) {
-                SpiderDen(galleryDetail).apply {
-                    initDownloadDir()
-                    writeComicInfo()
-                }
-            }
-        }
     }
 }

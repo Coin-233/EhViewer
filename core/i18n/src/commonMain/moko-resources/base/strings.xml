@@ -633,4 +633,6 @@
     <string name="blocked_image">Blocked image</string>
     <string name="show_blocked_image">Show blocked image</string>
     <!-- Tachiyomi Reader End-->
+    <string name="settings_download_archive_threads">Archive download connections</string>
+    <string name="settings_download_archive_threads_summary">Connections per archive (1–32). Servers without range support use one connection.</string>
 </resources>

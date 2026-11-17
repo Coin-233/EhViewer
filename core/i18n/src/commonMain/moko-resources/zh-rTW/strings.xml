@@ -592,4 +592,6 @@
     <string name="dark_theme_on">總是開啟</string>
     <string name="pref_crop_borders">邊緣裁剪</string>
     <!-- Tachiyomi Reader End-->
+    <string name="settings_download_archive_threads">壓縮包下載執行緒數</string>
+    <string name="settings_download_archive_threads_summary">每個壓縮包使用的下載執行緒數（1–32），伺服器不支援分段下載時使用單一連線。</string>
 </resources>

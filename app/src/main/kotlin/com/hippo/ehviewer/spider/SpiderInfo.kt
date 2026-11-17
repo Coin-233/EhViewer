@@ -28,6 +28,8 @@ class SpiderInfo(
     val pTokenMap: MutableMap<Int, String> = hashMapOf(),
 
     var previewPerPage: Int = -1,
+
+    val archiveResolution: String? = null,
 )
 
 private val cbor = Cbor {

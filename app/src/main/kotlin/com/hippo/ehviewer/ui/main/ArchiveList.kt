@@ -12,11 +12,9 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -28,6 +26,7 @@ import com.hippo.ehviewer.client.parser.Funds
 
 @Composable
 fun ArchiveList(
+    title: String,
     funds: Funds,
     items: List<Archive>,
     onItemClick: (Archive) -> Unit,
@@ -38,13 +37,15 @@ fun ArchiveList(
     val archiveOriginal = stringResource(R.string.archive_original)
     val archiveResample = stringResource(R.string.archive_resample)
     val fundsStyle = MaterialTheme.typography.labelLarge
-    val (hath, nonHath) = remember(items) { items.partition { it.isHath } }
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Text(text = title, modifier = Modifier.padding(bottom = 8.dp), textAlign = TextAlign.Center)
+        }
         item(span = { GridItemSpan(maxLineSpan) }) {
             Text(text = currentFunds, textAlign = TextAlign.Center)
         }
@@ -64,24 +65,10 @@ fun ArchiveList(
                 textStyle = fundsStyle,
             )
         }
-        items(nonHath) {
+        items(items) {
             ArchiveItem(
                 name = if (it.res == "org") archiveOriginal else archiveResample,
                 cost = if (it.cost == "Free!") archiveFree else it.cost,
-                size = it.size,
-                onClick = { onItemClick(it) },
-            )
-        }
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                Text(text = "H@H")
-            }
-        }
-        items(hath) {
-            ArchiveItem(
-                name = if (it.res == "org") archiveOriginal else it.name,
-                cost = if (it.cost == "Free") archiveFree else it.cost,
                 size = it.size,
                 onClick = { onItemClick(it) },
             )

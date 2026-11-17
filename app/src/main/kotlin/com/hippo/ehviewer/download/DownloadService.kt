@@ -109,7 +109,7 @@ class DownloadService :
             ACTION_START -> {
                 val gi = intent.getBundleExtra(KEY_GALLERY_INFO) ?: return
                 val label = intent.getStringExtra(KEY_LABEL)
-                deferredMgr.await().startDownload(decodeFromSavedState(gi), label)
+                deferredMgr.await().startDownload(decodeFromSavedState(gi), label, intent.getStringExtra(KEY_ARCHIVE_RESOLUTION))
             }
             ACTION_START_RANGE -> {
                 val gidList = intent.getLongArrayExtra(KEY_GID_LIST)
@@ -234,7 +234,7 @@ class DownloadService :
                 .setContentText(text)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(text))
                 .setSubText(if (info.total == -1 || info.finished == -1) null else info.finished.toString() + "/" + info.total)
-                .setProgress(info.total, info.finished, false)
+                .setProgress(info.total.coerceAtLeast(0), info.finished.coerceAtLeast(0), info.total <= 0 || info.finished < 0)
             startForeground()
         }
     }
@@ -409,6 +409,7 @@ class DownloadService :
         const val ACTION_CLEAR = "clear"
         const val KEY_GALLERY_INFO = "gallery_info"
         const val KEY_LABEL = "label"
+        private const val KEY_ARCHIVE_RESOLUTION = "archive_resolution"
         const val KEY_GID = "gid"
         const val KEY_GID_LIST = "gid_list"
         const val KEY_ACTION = "action"
@@ -430,9 +431,10 @@ class DownloadService :
         }
 
         context(_: Context)
-        fun startDownload(info: BaseGalleryInfo, label: String? = null) = startService(ACTION_START) {
+        fun startDownload(info: BaseGalleryInfo, label: String? = null, archiveResolution: String? = null) = startService(ACTION_START) {
             putExtra(KEY_GALLERY_INFO, encodeToSavedState(info))
             label?.let { putExtra(KEY_LABEL, it) }
+            archiveResolution?.let { putExtra(KEY_ARCHIVE_RESOLUTION, it) }
         }
 
         context(_: Context)

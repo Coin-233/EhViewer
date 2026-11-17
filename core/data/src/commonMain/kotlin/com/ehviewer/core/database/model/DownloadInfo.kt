@@ -15,6 +15,7 @@ interface AbstractDownloadInfo {
     var legacy: Int
     var time: Long
     var label: String?
+    var archiveResolution: String?
     var speed: Long
     var remaining: Long
     var finished: Int
@@ -51,6 +52,9 @@ data class DownloadEntity(
 
     @ColumnInfo(name = "LABEL", index = true)
     override var label: String? = null,
+
+    @ColumnInfo(name = "ARCHIVE_RESOLUTION")
+    override var archiveResolution: String? = null,
 
     @Ignore
     override var speed: Long = 0,

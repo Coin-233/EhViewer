@@ -176,6 +176,13 @@ fun AnimatedVisibilityScope.DownloadScreen(navigator: DestinationsNavigator) = S
                 state = mediaScan,
             )
             val multiThreadDownload = Settings.multiThreadDownload.asMutableState()
+            IntSliderPreference(
+                maxValue = 32,
+                minValue = 1,
+                title = stringResource(R.string.settings_download_archive_threads),
+                summary = stringResource(R.string.settings_download_archive_threads_summary),
+                pref = Settings.archiveDownloadThreads,
+            )
             SimpleMenuPreferenceInt(
                 title = stringResource(id = R.string.settings_download_concurrency),
                 summary = stringResource(id = R.string.settings_download_concurrency_summary, multiThreadDownload.value),

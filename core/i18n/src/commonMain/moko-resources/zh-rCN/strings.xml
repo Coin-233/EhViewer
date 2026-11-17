@@ -615,4 +615,6 @@
     <string name="blocked_image">已屏蔽的图片</string>
     <string name="show_blocked_image">显示已屏蔽的图片</string>
     <!-- Tachiyomi Reader End-->
+    <string name="settings_download_archive_threads">压缩包下载线程数</string>
+    <string name="settings_download_archive_threads_summary">每个压缩包使用的下载线程数（1–32），服务器不支持分段下载时使用单连接。</string>
 </resources>
